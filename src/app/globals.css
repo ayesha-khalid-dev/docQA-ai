@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #DFF7EC;
   --foreground: #171717;
 }
 
@@ -23,4 +23,114 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Floating background symbols in the hero section */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-18px) translateX(8px) rotate(6deg);
+  }
+  50% {
+    transform: translateY(-6px) translateX(-6px) rotate(-4deg);
+  }
+  75% {
+    transform: translateY(-22px) translateX(4px) rotate(3deg);
+  }
+}
+
+.floating-symbol {
+  position: absolute;
+  animation: floatSlow 7s ease-in-out infinite;
+  opacity: 1;
+  pointer-events: none;
+  user-select: none;
+  filter: none;
+}
+
+/* Subtle continuous pulse + 3D lift for the primary button, intensifies on hover */
+@keyframes buttonPulse {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 10px 24px rgba(16, 185, 129, 0.5);
+    transform: translateY(-3px);
+  }
+}
+
+.btn-3d {
+  animation: buttonPulse 2.5s ease-in-out infinite;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+.btn-3d:hover {
+  transform: translateY(-6px) scale(1.06);
+  box-shadow: 0 16px 32px rgba(16, 185, 129, 0.55);
+  animation-play-state: paused;
+}
+
+/* Gentle floating bob for feature cards, each with its own delay */
+@keyframes cardFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.card-float {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.card-float:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+}
+
+/* Small emoji/icon inside each card, floats independently and slightly faster */
+@keyframes iconBob {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(8deg);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 22s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+.icon-bob {
+  display: inline-block;
+  animation: iconBob 2.2s ease-in-out infinite;
 }
