@@ -16,6 +16,27 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "DocQA - Chat with your Documents",
   description: "Upload a PDF and ask questions instantly using AI.",
+  openGraph: {
+    title: "DocQA - Chat with your Documents",
+    description: "Upload any PDF and ask questions instantly. Powered by AI to give you accurate answers from your own documents.",
+    url: "https://doc-qa-ai-jade.vercel.app",
+    siteName: "DocQA",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "DocQA - Chat with your Documents",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DocQA - Chat with your Documents",
+    description: "Upload any PDF and ask questions instantly using AI.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({ children }) {
