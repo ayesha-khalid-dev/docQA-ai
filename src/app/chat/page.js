@@ -120,7 +120,7 @@ function ChatContent() {
   return (
     <main className="min-h-screen flex flex-col">
       {/* Header */}
-      <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <div className="border-b border-gray-200 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-xl font-semibold text-gray-900">
           Chat with your <span className="text-[#10B981]">Document</span>
         </h1>
@@ -129,7 +129,7 @@ function ChatContent() {
           <select
             value={docId || ""}
             onChange={handleDocumentSwitch}
-            className="text-sm border border-gray-300 rounded-full px-3 py-2 focus:outline-none focus:border-[#10B981]"
+           className="w-full sm:w-auto text-sm border border-gray-300 rounded-full px-3 py-2 focus:outline-none focus:border-[#10B981]"
           >
             {documents.map((doc) => (
               <option key={doc.id} value={doc.id}>
