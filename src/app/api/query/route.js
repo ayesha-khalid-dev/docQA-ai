@@ -1,6 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Pinecone } from "@pinecone-database/pinecone";
 
+// Give the function enough time for retries (Vercel)
+export const maxDuration = 30;
+
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -8,6 +11,63 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const pinecone = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY,
 });
+
+// Models to try in order. If the first one is busy (503), the next one is used.
+const CHAT_MODELS = [
+  "models/gemini-3.6-flash",
+  "models/gemini-3.5-flash",
+  "models/gemini-3.5-flash-lite",
+];
+
+const ATTEMPTS_PER_MODEL = 2;
+const RETRY_DELAY_MS = 800;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Errors that are temporary and worth retrying / switching model for
+function isTemporaryError(error) {
+  const msg = String(error?.message || "");
+  return (
+    error?.status === 503 ||
+    error?.status === 429 ||
+    error?.status === 500 ||
+    msg.includes("503") ||
+    msg.includes("429") ||
+    msg.includes("500") ||
+    msg.toLowerCase().includes("high demand") ||
+    msg.toLowerCase().includes("overloaded")
+  );
+}
+
+// Try each model (with a retry) until one works
+async function generateWithFallback(prompt) {
+  let lastError = null;
+
+  for (const modelName of CHAT_MODELS) {
+    const model = genAI.getGenerativeModel({ model: modelName });
+
+    for (let attempt = 1; attempt <= ATTEMPTS_PER_MODEL; attempt++) {
+      try {
+        const result = await model.generateContent(prompt);
+        console.log(`Answer generated with ${modelName} (attempt ${attempt})`);
+        return result.response.text();
+      } catch (error) {
+        lastError = error;
+        console.error(`${modelName} attempt ${attempt} failed:`, error.message);
+
+        // Not a temporary problem (bad key, bad request, etc.) -> stop right away
+        if (!isTemporaryError(error)) throw error;
+
+        if (attempt < ATTEMPTS_PER_MODEL) {
+          await sleep(RETRY_DELAY_MS * attempt);
+        }
+      }
+    }
+  }
+
+  // All models failed
+  throw lastError;
+}
 
 export async function POST(request) {
   try {
@@ -34,7 +94,7 @@ export async function POST(request) {
 
     const questionEmbedding = embedResult.embedding.values;
 
-    // Step 3: Search Pinecone for the most relevant chunks — only within this document's namespace
+    // Step 3: Search Pinecone for the most relevant chunks, only within this document's namespace
     const index = pinecone.index(process.env.PINECONE_INDEX_NAME);
 
     const searchResults = await index.namespace(docId).query({
@@ -57,8 +117,6 @@ export async function POST(request) {
       .join("\n\n---\n\n");
 
     // Step 5: Ask Gemini to answer using only that context
-    const chatModel = genAI.getGenerativeModel({ model: "models/gemini-3.6-flash" });
-
     const prompt = `You are a helpful assistant. You are given context from a document the user uploaded, followed by their question.
 
 Instructions:
@@ -78,14 +136,20 @@ Question: ${question}
 
 Answer clearly and concisely, following the formatting rules above.`;
 
-    const result = await chatModel.generateContent(prompt);
-    const answer = result.response.text();
-
-    console.log("Answer generated successfully.");
+    const answer = await generateWithFallback(prompt);
 
     return Response.json({ answer });
   } catch (error) {
     console.error("Query error:", error);
-    return Response.json({ error: error.message || "Something went wrong" }, { status: 500 });
+
+    // Friendly message instead of the raw Google error
+    if (isTemporaryError(error)) {
+      return Response.json(
+        { error: "The AI is very busy right now. Please try again in a minute." },
+        { status: 503 }
+      );
+    }
+
+    return Response.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 }
